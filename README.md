@@ -62,3 +62,13 @@ A full-stack Progressive Web App (PWA) for managing Paying Guest accommodations.
 | Security | Firebase Security Rules, API Key Restrictions, XSS Sanitization |
 
 ## 📐 Architecture
+┌─────────────┐ ┌──────────────┐ ┌─────────────┐
+│ Client │────▶│ Firebase │────▶│ Firestore │
+│ (PWA/SPA) │ │ Hosting │ │ (Database) │
+└─────────────┘ └──────────────┘ └─────────────┘
+│ │
+▼ ▼
+┌─────────────┐ ┌──────────────┐
+│ Cloudinary │ │ Vercel │
+│ (Uploads) │ │ (API/CRON) │
+└─────────────┘ └──────────────┘
