@@ -9,7 +9,6 @@ async function getExpensesHTML() {
     <div class="page expenses-page">
       <h2>🧾 Expense Tracker</h2>
       
-      <!-- Add Expense -->
       <div class="section">
         <h3>➕ Add New Expense</h3>
         <select id="expense-category">
@@ -25,7 +24,6 @@ async function getExpensesHTML() {
         <button class="btn-primary" onclick="addExpense()">Add Expense 💾</button>
       </div>
 
-      <!-- My Expenses - Two Tabs -->
       <div class="section">
         <h3>📋 My Expenses</h3>
         <div class="tab-bar">
@@ -36,7 +34,6 @@ async function getExpensesHTML() {
         <div id="my-settled-expenses" style="display:none;">Loading...</div>
       </div>
 
-      <!-- Admin: All Expenses -->
       ${isManager ? `
       <div id="admin-expenses-section">
         <div class="section">
@@ -52,7 +49,6 @@ async function getExpensesHTML() {
   `;
 }
 
-// Switch expense tab (pending/settled)
 function switchExpenseTab(tab) {
   document.querySelectorAll('#my-pending-expenses, #my-settled-expenses').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -66,7 +62,6 @@ function switchExpenseTab(tab) {
   }
 }
 
-// Load expenses page data
 async function loadExpensesPageData() {
   const userId = window.currentUser.uid;
   const isManager = (window.currentUser.activeRole === 'manager' || window.currentUser.activeRole === 'po');
@@ -76,7 +71,6 @@ async function loadExpensesPageData() {
     loadSettledExpenses();
   }
 
-  // Load my pending expenses
   const pendingSnapshot = await db.collection('expenses')
     .where('userId', '==', userId)
     .where('status', '==', 'pending_settlement')
@@ -100,7 +94,6 @@ async function loadExpensesPageData() {
     pendingEl.innerHTML = '<p>No pending expenses</p>';
   }
 
-  // Load my settled expenses
   const settledSnapshot = await db.collection('expenses')
     .where('userId', '==', userId)
     .where('status', '==', 'settled')
@@ -125,14 +118,12 @@ async function loadExpensesPageData() {
   }
 }
 
-// Add expense
 async function addExpense() {
   const category = document.getElementById('expense-category').value;
   const amount = parseInt(document.getElementById('expense-amount').value);
   const description = document.getElementById('expense-desc').value.trim();
   const date = document.getElementById('expense-date').value;
 
-  // Validate other category - description is required
   if (category === 'other' && !description) {
     alert('Please enter a description for the "Other" category');
     return;
@@ -165,7 +156,6 @@ async function addExpense() {
   }
 }
 
-// Load unsettled expenses (admin)
 async function loadUnsettledExpenses() {
   const snapshot = await db.collection('expenses')
     .where('status', '==', 'pending_settlement')
@@ -194,7 +184,6 @@ async function loadUnsettledExpenses() {
   }
 }
 
-// Load settled expenses (admin)
 async function loadSettledExpenses() {
   const snapshot = await db.collection('expenses')
     .where('status', '==', 'settled')
@@ -219,13 +208,29 @@ async function loadSettledExpenses() {
   }
 }
 
-// Settle expense (admin)
+// Settle expense + clean up old ones (14 days)
 async function settleExpense(docId) {
   if (confirm('Mark this expense as settled?')) {
     await db.collection('expenses').doc(docId).update({
       status: 'settled',
       settledAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+
+    // Clean up old settled expenses (older than 14 days)
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const oldExpenses = await db.collection('expenses')
+      .where('status', '==', 'settled')
+      .where('settledAt', '<=', fourteenDaysAgo)
+      .get();
+
+    if (!oldExpenses.empty) {
+      const batch = db.batch();
+      oldExpenses.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    }
+
     loadUnsettledExpenses();
     loadSettledExpenses();
   }

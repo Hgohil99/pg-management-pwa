@@ -194,6 +194,15 @@ auth.onAuthStateChanged(async (user) => {
         present: userData.present
       };
 
+      // Check if force logout was requested
+      const lastForceLogout = userData.forceLogout ? userData.forceLogout.toMillis() : 0;
+      const lastLogin = user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime).getTime() : 0;
+      if (lastForceLogout > lastLogin) {
+        await auth.signOut();
+        location.reload();
+        return;
+      }
+
       resetIdleTimer();
       await initPGApp(userData);
       loadingScreen.style.display = 'none';

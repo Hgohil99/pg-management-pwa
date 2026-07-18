@@ -264,3 +264,17 @@ function updateThemeToggleUI() {
     if (label) label.textContent = '🌙 Dark Mode';
   }
 }
+
+// Force logout all devices for current user
+async function forceLogoutAll() {
+  if (!confirm('This will sign you out on all devices. Continue?')) return;
+  try {
+    await db.collection('users').doc(window.currentUser.uid).update({
+      forceLogout: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    auth.signOut();
+    location.reload();
+  } catch (error) {
+    alert('Error: ' + error.message);
+  }
+}
