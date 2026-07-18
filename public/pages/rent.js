@@ -21,7 +21,6 @@ async function getRentHTML() {
       <div class="section" id="upload-rent-section">
         <h3>📸 Upload Payment Screenshot</h3>
         <p>Amount: <strong>₹</strong> <input type="number" id="rent-amount-input" placeholder="Enter amount" min="1" style="width:150px; display:inline-block;"></p>
-        <input type="file" id="rent-screenshot" accept="image/*" capture="environment">
         <button class="btn-primary" onclick="uploadRent()">Upload & Mark as Paid</button>
       </div>
 
@@ -134,9 +133,16 @@ async function uploadRent() {
   const monthYear = `${String(d.getMonth() + 1).padStart(2, '0')}_${d.getFullYear()}`;
   const userId = window.currentUser.uid;
 
+  // Get signature from Vercel
+  const response = await fetch('https://pg-management-pwa.vercel.app/api/cloudinary-sign');
+  const signData = await response.json();
+
   cloudinary.openUploadWidget({
-    cloudName: 'crwgcgq0',
-    uploadPreset: 'pg_manager_rent',
+    cloudName: signData.cloudName,
+    uploadSignature: signData.signature,
+    uploadSignatureTimestamp: signData.timestamp,
+    apiKey: '776889833388688',
+    folder: signData.folder,
     sources: ['local', 'camera'],
     multiple: false,
     maxFileSize: 5000000,
