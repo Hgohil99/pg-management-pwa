@@ -141,7 +141,7 @@ async function uploadRent() {
     cloudName: signData.cloudName,
     uploadSignature: signData.signature,
     uploadSignatureTimestamp: signData.timestamp,
-    apiKey: '776889833388688',
+    apiKey: 'YOUR_CLOUDINARY_API_KEY',
     folder: signData.folder,
     sources: ['local', 'camera'],
     multiple: false,
