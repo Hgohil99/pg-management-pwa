@@ -13,20 +13,17 @@ async function getSabhaHTML() {
     <div class="page sabha-page">
       <h2>📝 Weekly Sabha</h2>
       
-      <!-- Karyakar Info -->
       <div class="section">
         <h3>👤 Current Karyakar</h3>
         <p id="karyakar-info">Loading...</p>
         ${isManager ? `<button class="btn-primary" onclick="showSetKaryakarDialog()">Change Karyakar</button>` : ''}
       </div>
 
-      <!-- This Week's Sabha -->
       <div class="section">
         <h3>📋 This Week's Sabha Tasks</h3>
         <div id="sabha-tasks">Loading...</div>
       </div>
 
-      <!-- Karyakar: Assign Tasks -->
       <div id="karyakar-section" style="display:none;">
         <div class="section">
           <h3>✍️ Assign Tasks</h3>
@@ -35,7 +32,6 @@ async function getSabhaHTML() {
         </div>
       </div>
 
-      <!-- My Tasks (with Accept/Reject) -->
       <div class="section">
         <h3>👤 My Assigned Tasks</h3>
         <div id="my-sabha-tasks">Loading...</div>
@@ -44,14 +40,12 @@ async function getSabhaHTML() {
   `;
 }
 
-// Load sabha page data
 async function loadSabhaPageData() {
   const userId = window.currentUser.uid;
   const config = await getPGConfig();
   const isKaryakar = config?.currentKaryakarId === userId;
   const isManager = window.currentUser.role === 'manager' || window.currentUser.role === 'po';
 
-  // Show karyakar info
   const karyakarId = config?.currentKaryakarId;
   const karyakarInfo = document.getElementById('karyakar-info');
   if (karyakarId) {
@@ -62,18 +56,13 @@ async function loadSabhaPageData() {
     karyakarInfo.innerHTML = 'No Karyakar assigned yet';
   }
 
-  // Find this Wednesday
   const todayDate = new Date();
   const dayOfWeek = todayDate.getDay();
   let wednesday = new Date(todayDate);
-  if (dayOfWeek <= 3) {
-    wednesday.setDate(todayDate.getDate() + (3 - dayOfWeek));
-  } else {
-    wednesday.setDate(todayDate.getDate() + (10 - dayOfWeek));
-  }
+  if (dayOfWeek <= 3) { wednesday.setDate(todayDate.getDate() + (3 - dayOfWeek)); }
+  else { wednesday.setDate(todayDate.getDate() + (10 - dayOfWeek)); }
   const wednesdayStr = formatDate(wednesday);
 
-  // Load sabha document
   const sabhaDoc = await db.collection('weeklySabha').doc(wednesdayStr).get();
   const tasksEl = document.getElementById('sabha-tasks');
 
@@ -92,7 +81,6 @@ async function loadSabhaPageData() {
       tasksEl.innerHTML = '<p>⏳ Tasks not yet assigned. Waiting for Karyakar.</p>';
     }
 
-    // Show my tasks with accept/reject
     const myTasks = (data.tasks || []).filter(t => t.assigneeId === userId);
     const myTasksEl = document.getElementById('my-sabha-tasks');
     if (myTasks.length > 0) {
@@ -112,7 +100,6 @@ async function loadSabhaPageData() {
       myTasksEl.innerHTML = '<p>No tasks assigned to you</p>';
     }
 
-    // Show karyakar section
     if (isKaryakar && !data.isFinished) {
       document.getElementById('karyakar-section').style.display = 'block';
       loadTaskAssignmentForm();
@@ -120,7 +107,6 @@ async function loadSabhaPageData() {
   } else {
     tasksEl.innerHTML = '<p>No sabha created yet for this week</p>';
     document.getElementById('my-sabha-tasks').innerHTML = '<p>No tasks yet</p>';
-    
     if (isKaryakar) {
       document.getElementById('karyakar-section').style.display = 'block';
       loadTaskAssignmentForm();
@@ -128,65 +114,50 @@ async function loadSabhaPageData() {
   }
 }
 
-// Accept sabha task
 async function acceptSabhaTask(dateStr, userId, taskDesc) {
   try {
     const docRef = db.collection('weeklySabha').doc(dateStr);
     const doc = await docRef.get();
-    const data = doc.data();
-    const tasks = (data.tasks || []).map(t => {
+    const tasks = (doc.data().tasks || []).map(t => {
       if (t.assigneeId === userId && t.taskDescription === taskDesc) {
         return { ...t, status: 'accepted' };
       }
       return t;
     });
     await docRef.update({ tasks });
-    
     const config = await getPGConfig();
     if (config?.currentKaryakarId) {
       await sendNotification(config.currentKaryakarId, 'Task Accepted', `${window.currentUser.name} accepted task: ${taskDesc}`, '/');
     }
-    
     alert('✅ Task accepted!');
     loadSabhaPageData();
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
+  } catch (error) { alert('Error: ' + error.message); }
 }
 
-// Decline sabha task
 async function declineSabhaTask(dateStr, userId, taskDesc) {
   if (!confirm('Are you sure you want to decline this task?')) return;
-  
   try {
     const docRef = db.collection('weeklySabha').doc(dateStr);
     const doc = await docRef.get();
-    const data = doc.data();
-    const tasks = (data.tasks || []).map(t => {
+    const tasks = (doc.data().tasks || []).map(t => {
       if (t.assigneeId === userId && t.taskDescription === taskDesc) {
         return { ...t, status: 'declined' };
       }
       return t;
     });
     await docRef.update({ tasks });
-    
     const config = await getPGConfig();
     if (config?.currentKaryakarId) {
       await sendNotification(config.currentKaryakarId, 'Task Declined', `${window.currentUser.name} declined task: ${taskDesc}`, '/');
     }
-    
     alert('Task declined.');
     loadSabhaPageData();
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
+  } catch (error) { alert('Error: ' + error.message); }
 }
 
-// Load task assignment form for Karyakar
 async function loadTaskAssignmentForm() {
   const users = await getAllUsers();
   const formEl = document.getElementById('task-assignment-form');
-  
   formEl.innerHTML = users.map(user => `
     <div class="list-item">
       <span><strong>${user.name}</strong></span>
@@ -195,16 +166,12 @@ async function loadTaskAssignmentForm() {
   `).join('');
 }
 
-// Finish sabha assignment
 async function finishSabha() {
   const todayDate = new Date();
   const dayOfWeek = todayDate.getDay();
   let wednesday = new Date(todayDate);
-  if (dayOfWeek <= 3) {
-    wednesday.setDate(todayDate.getDate() + (3 - dayOfWeek));
-  } else {
-    wednesday.setDate(todayDate.getDate() + (10 - dayOfWeek));
-  }
+  if (dayOfWeek <= 3) { wednesday.setDate(todayDate.getDate() + (3 - dayOfWeek)); }
+  else { wednesday.setDate(todayDate.getDate() + (10 - dayOfWeek)); }
   const wednesdayStr = formatDate(wednesday);
 
   const users = await getAllUsers();
@@ -213,19 +180,21 @@ async function finishSabha() {
   users.forEach(user => {
     const taskInput = document.getElementById(`task-${user.id}`);
     if (taskInput && taskInput.value.trim()) {
+      const sanitizedTask = taskInput.value.trim()
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      
       tasks.push({
         assigneeId: user.id,
         assigneeName: user.name,
-        taskDescription: taskInput.value.trim(),
+        taskDescription: sanitizedTask,
         status: 'pending'
       });
     }
   });
 
-  if (tasks.length === 0) {
-    alert('Please assign at least one task');
-    return;
-  }
+  if (tasks.length === 0) { alert('Please assign at least one task'); return; }
 
   try {
     await db.collection('weeklySabha').doc(wednesdayStr).set({
@@ -242,7 +211,5 @@ async function finishSabha() {
 
     alert('✅ Sabha tasks assigned successfully!');
     loadSabhaPageData();
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
+  } catch (error) { alert('Error: ' + error.message); }
 }

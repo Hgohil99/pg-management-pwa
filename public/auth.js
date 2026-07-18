@@ -2,20 +2,17 @@
 // 🔐 AUTHENTICATION MODULE
 // ============================================
 
-// Idle timeout settings
-const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
-const WARNING_BEFORE = 60 * 1000; // 1 minute warning
+const IDLE_TIMEOUT = 15 * 60 * 1000;
+const WARNING_BEFORE = 60 * 1000;
 let idleTimer;
 let warningTimer;
 
-// Check for returning email link sign-in
 window.addEventListener('load', () => {
   if (auth.isSignInWithEmailLink(window.location.href)) {
     handleEmailLinkSignIn();
   }
 });
 
-// Reset idle timer on user activity
 function resetIdleTimer() {
   clearTimeout(idleTimer);
   clearTimeout(warningTimer);
@@ -33,17 +30,14 @@ function resetIdleTimer() {
   }, IDLE_TIMEOUT);
 }
 
-// Track user activity
 ['click', 'touchstart', 'scroll', 'keydown'].forEach(event => {
   document.addEventListener(event, resetIdleTimer);
 });
 
-// Logout when tab is closed
 window.addEventListener('beforeunload', () => {
   auth.signOut();
 });
 
-// Detect tab visibility change
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     setTimeout(() => {
@@ -55,13 +49,11 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Show register page
 function showRegister() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('register-page').style.display = 'flex';
 }
 
-// Show login page
 function showLogin() {
   document.getElementById('register-page').style.display = 'none';
   document.getElementById('login-page').style.display = 'flex';
@@ -81,11 +73,30 @@ document.getElementById('register-form')?.addEventListener('submit', async (e) =
     return;
   }
 
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    messageEl.innerHTML = '<p style="color:red;">Please enter a valid email address</p>';
+    return;
+  }
+
+  // Validate mobile (10 digits, Indian format)
+  const cleanMobile = mobile.replace(/[\s\+\-]/g, '');
+  const mobileRegex = /^[6-9]\d{9}$/;
+  if (!mobileRegex.test(cleanMobile)) {
+    messageEl.innerHTML = '<p style="color:red;">Please enter a valid 10-digit mobile number</p>';
+    return;
+  }
+
+  // Validate password length
+  if (password.length < 6) {
+    messageEl.innerHTML = '<p style="color:red;">Password must be at least 6 characters</p>';
+    return;
+  }
+
   // Check if mobile already exists
   try {
-    const mobileCheck = await db.collection('users')
-      .where('mobile', '==', mobile)
-      .get();
+    const mobileCheck = await db.collection('users').where('mobile', '==', mobile).get();
     if (!mobileCheck.empty) {
       messageEl.innerHTML = '<p style="color:orange;">⚠️ This mobile number is already registered. Please <a href="#" onclick="showLogin()" style="color:#4CAF50;">Sign In</a> instead.</p>';
       return;
@@ -94,7 +105,7 @@ document.getElementById('register-form')?.addEventListener('submit', async (e) =
     console.error('Mobile check error:', error);
   }
 
-  // Check if name already exists (case-insensitive)
+  // Check if name already exists
   try {
     const allUsers = await db.collection('users').get();
     const nameExists = allUsers.docs.some(doc => {
@@ -109,20 +120,14 @@ document.getElementById('register-form')?.addEventListener('submit', async (e) =
     console.error('Name check error:', error);
   }
 
-  // Create account
   try {
     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
     const userId = userCredential.user.uid;
 
     await db.collection('users').doc(userId).set({
-      name: name,
-      email: email,
-      mobile: mobile,
-      role: 'resident',
-      activeRole: 'resident',
-      approved: false,
-      active: true,
-      present: false,
+      name: name, email: email, mobile: cleanMobile,
+      role: 'resident', activeRole: 'resident',
+      approved: false, active: true, present: false,
       order: 9999,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       removedAt: null
@@ -175,34 +180,24 @@ auth.onAuthStateChanged(async (user) => {
       if (!userData.approved) {
         loadingScreen.style.display = 'none';
         pendingPage.style.display = 'flex';
-        
-        db.collection('users').doc(user.uid)
-          .onSnapshot(doc => {
-            if (doc.exists && doc.data().approved) {
-              location.reload();
-            }
-          });
+        db.collection('users').doc(user.uid).onSnapshot(doc => {
+          if (doc.exists && doc.data().approved) { location.reload(); }
+        });
         return;
       }
 
       window.currentUser = {
-        uid: user.uid,
-        email: user.email,
-        name: userData.name,
-        mobile: userData.mobile,
-        role: userData.role,
+        uid: user.uid, email: user.email, name: userData.name,
+        mobile: userData.mobile, role: userData.role,
         activeRole: userData.activeRole || userData.role,
-        approved: userData.approved,
-        active: userData.active,
+        approved: userData.approved, active: userData.active,
         present: userData.present
       };
 
       resetIdleTimer();
       await initPGApp(userData);
-      
       loadingScreen.style.display = 'none';
       appContainer.style.display = 'block';
-
     } catch (error) {
       console.error('Auth error:', error);
       loadingScreen.style.display = 'none';
@@ -242,13 +237,9 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
   }
 });
 
-// Handle email link sign-in
 async function handleEmailLinkSignIn() {
   let email = window.localStorage.getItem('emailForSignIn');
-  if (!email) {
-    email = prompt('Please enter your email address to confirm sign-in:');
-    if (!email) return;
-  }
+  if (!email) { email = prompt('Please enter your email address to confirm sign-in:'); if (!email) return; }
   try {
     await auth.signInWithEmailLink(email, window.location.href);
     window.localStorage.removeItem('emailForSignIn');
@@ -259,26 +250,15 @@ async function handleEmailLinkSignIn() {
   }
 }
 
-// Logout function
 function logout() {
   clearTimeout(idleTimer);
   clearTimeout(warningTimer);
-  auth.signOut()
-    .then(() => {
-      window.currentUser = null;
-      location.reload();
-    })
+  auth.signOut().then(() => { window.currentUser = null; location.reload(); })
     .catch(error => console.error('Logout error:', error));
 }
 
-// Toggle password visibility
 function togglePassword(inputId, btn) {
   const input = document.getElementById(inputId);
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.textContent = '🙈';
-  } else {
-    input.type = 'password';
-    btn.textContent = '👁️';
-  }
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁️'; }
 }
