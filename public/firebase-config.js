@@ -1,27 +1,26 @@
 // ============================================
-// 🔥 FIREBASE CONFIGURATION - PUBLIC VERSION
+// 🔥 FIREBASE CONFIGURATION
 // ============================================
-// Replace with your own Firebase config from:
-// Firebase Console → Project Settings → General → Your apps
 
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "your-app.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-app.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC0XwLcK-23_K6gmfDAxxBD463V46el7Kg",
+  authDomain: "pg-management-app-67141.firebaseapp.com",
+  projectId: "pg-management-app-67141",
+  storageBucket: "pg-management-app-67141.appspot.com",
+  messagingSenderId: "753376001182",
+  appId: "1:753376001182:web:a3b84dd0fb99f5c65a8f8f"
 };
 
-// Only initialize if local config didn't already
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-    console.warn('Offline persistence error:', err.code);
-  });
-  auth.useDeviceLanguage();
-}
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+  console.warn('Offline persistence error:', err.code);
+});
+
+auth.useDeviceLanguage();
 
 console.log('✅ Firebase initialized');
