@@ -71,9 +71,10 @@ async function loadExpensesPageData() {
     loadSettledExpenses();
   }
 
+  // My pending (including partially settled)
   const pendingSnapshot = await db.collection('expenses')
     .where('userId', '==', userId)
-    .where('status', '==', 'pending_settlement')
+    .where('status', 'in', ['pending_settlement', 'partially_settled'])
     .orderBy('date', 'desc')
     .get();
 
@@ -81,11 +82,14 @@ async function loadExpensesPageData() {
   if (!pendingSnapshot.empty) {
     pendingEl.innerHTML = pendingSnapshot.docs.map(doc => {
       const data = doc.data();
+      const settled = data.settledAmount || 0;
+      const remaining = data.totalAmount - settled;
       return `
         <div class="list-item" style="font-size:13px;">
           <span>${data.category} - ${data.description || ''}</span>
-          <span>₹${data.amount}</span>
-          <span>${formatDisplayDate(data.date)}</span>
+          <span>Total: ₹${data.totalAmount}</span>
+          ${settled > 0 ? `<span>Settled: ₹${settled}</span>` : ''}
+          <span>Pending: ₹${remaining}</span>
           <span>⏳</span>
         </div>
       `;
@@ -94,6 +98,7 @@ async function loadExpensesPageData() {
     pendingEl.innerHTML = '<p>No pending expenses</p>';
   }
 
+  // My settled (fully)
   const settledSnapshot = await db.collection('expenses')
     .where('userId', '==', userId)
     .where('status', '==', 'settled')
@@ -107,7 +112,7 @@ async function loadExpensesPageData() {
       return `
         <div class="list-item" style="font-size:13px;">
           <span>${data.category} - ${data.description || ''}</span>
-          <span>₹${data.amount}</span>
+          <span>₹${data.totalAmount}</span>
           <span>${data.settledAt ? formatDisplayDate(data.settledAt.toDate()) : ''}</span>
           <span>✅</span>
         </div>
@@ -139,7 +144,8 @@ async function addExpense() {
       userId: window.currentUser.uid,
       userName: window.currentUser.name,
       category: category,
-      amount: amount,
+      totalAmount: amount,
+      settledAmount: 0,
       description: description,
       date: date,
       status: 'pending_settlement',
@@ -158,27 +164,31 @@ async function addExpense() {
 
 async function loadUnsettledExpenses() {
   const snapshot = await db.collection('expenses')
-    .where('status', '==', 'pending_settlement')
+    .where('status', 'in', ['pending_settlement', 'partially_settled'])
     .orderBy('date', 'desc')
     .get();
 
   const el = document.getElementById('unsettled-expenses');
-  let total = 0;
+  let totalPending = 0;
 
   if (!snapshot.empty) {
     el.innerHTML = snapshot.docs.map(doc => {
       const data = doc.data();
-      total += data.amount;
+      const settled = data.settledAmount || 0;
+      const remaining = data.totalAmount - settled;
+      totalPending += remaining;
       return `
         <div class="list-item">
           <span>${data.userName}: ${data.category}</span>
-          <span>₹${data.amount}</span>
-          <span>${formatDisplayDate(data.date)}</span>
-          <button class="btn-success btn-sm" onclick="settleExpense('${doc.id}')">Settle ✅</button>
+          <span>Total: ₹${data.totalAmount}</span>
+          ${settled > 0 ? `<span>Settled: ₹${settled}</span>` : ''}
+          <span>Left: ₹${remaining}</span>
+          <input type="number" id="settle-amount-${doc.id}" placeholder="Amount" min="1" max="${remaining}" style="width:80px;">
+          <button class="btn-success btn-sm" onclick="settleExpense('${doc.id}')">Settle</button>
         </div>
       `;
     }).join('');
-    el.innerHTML += `<p><strong>Total Unsettled: ₹${total}</strong></p>`;
+    el.innerHTML += `<p><strong>Total Pending: ₹${totalPending}</strong></p>`;
   } else {
     el.innerHTML = '<p>No unsettled expenses 🎉</p>';
   }
@@ -198,7 +208,7 @@ async function loadSettledExpenses() {
       return `
         <div class="list-item">
           <span>${data.userName}: ${data.category}</span>
-          <span>₹${data.amount}</span>
+          <span>₹${data.totalAmount}</span>
           <span>✅ ${data.settledAt ? formatDisplayDate(data.settledAt.toDate()) : ''}</span>
         </div>
       `;
@@ -208,30 +218,53 @@ async function loadSettledExpenses() {
   }
 }
 
-// Settle expense + clean up old ones (14 days)
+// Settle expense (partial or full)
 async function settleExpense(docId) {
-  if (confirm('Mark this expense as settled?')) {
-    await db.collection('expenses').doc(docId).update({
-      status: 'settled',
-      settledAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+  const amountInput = document.getElementById(`settle-amount-${docId}`);
+  const settleAmount = amountInput ? parseInt(amountInput.value) : 0;
 
-    // Clean up old settled expenses (older than 14 days)
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-
-    const oldExpenses = await db.collection('expenses')
-      .where('status', '==', 'settled')
-      .where('settledAt', '<=', fourteenDaysAgo)
-      .get();
-
-    if (!oldExpenses.empty) {
-      const batch = db.batch();
-      oldExpenses.forEach(doc => batch.delete(doc.ref));
-      await batch.commit();
-    }
-
-    loadUnsettledExpenses();
-    loadSettledExpenses();
+  const doc = await db.collection('expenses').doc(docId).get();
+  if (!doc.exists) return;
+  
+  const data = doc.data();
+  const currentSettled = data.settledAmount || 0;
+  const totalAmount = data.totalAmount;
+  const remaining = totalAmount - currentSettled;
+  
+  // If no amount entered, settle full remaining
+  const amount = settleAmount > 0 ? settleAmount : remaining;
+  
+  if (amount <= 0 || amount > remaining) {
+    alert(`Please enter an amount between 1 and ${remaining}`);
+    return;
   }
+
+  const newSettled = currentSettled + amount;
+  const newStatus = newSettled >= totalAmount ? 'settled' : 'partially_settled';
+
+  if (!confirm(`Settle ₹${amount}? (Total settled will be ₹${newSettled}/${totalAmount})`)) return;
+
+  await db.collection('expenses').doc(docId).update({
+    settledAmount: newSettled,
+    status: newStatus,
+    settledAt: newStatus === 'settled' ? firebase.firestore.FieldValue.serverTimestamp() : null
+  });
+
+  // Clean up old fully settled expenses (14 days)
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+  const oldExpenses = await db.collection('expenses')
+    .where('status', '==', 'settled')
+    .where('settledAt', '<=', fourteenDaysAgo)
+    .get();
+
+  if (!oldExpenses.empty) {
+    const batch = db.batch();
+    oldExpenses.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+  }
+
+  loadUnsettledExpenses();
+  loadSettledExpenses();
 }
