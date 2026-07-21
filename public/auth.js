@@ -281,8 +281,12 @@ async function resetPassword() {
   }
   try {
     await auth.sendPasswordResetEmail(email);
-    alert('Password reset link sent to your email!');
+    alert('Password reset link sent! Check your email (also check spam folder).');
   } catch (error) {
-    alert('Error: ' + error.message);
+    if (error.code === 'auth/user-not-found') {
+      alert('No account found with this email. Please register first.');
+    } else {
+      alert('Error: ' + error.message);
+    }
   }
 }
