@@ -77,6 +77,7 @@ async function loadUsersData() {
   if (usersListener) usersListener();
   
   usersListener = db.collection('users')
+    .where('approved', '==', true)
     .where('active', '==', true)
     .orderBy('order', 'asc')
     .onSnapshot(snapshot => {
@@ -127,6 +128,7 @@ function loadAllUsersList() {
         ${window.currentUser.role === 'po' && user.role === 'manager' ? `<button class="btn-sm" onclick="makeResident('${user.id}')" style="background:#2196F3; color:white;">⬇️</button>` : ''}
         <button class="btn-sm" onclick="moveUserUp('${user.id}', ${index})">⬆️</button>
         <button class="btn-sm" onclick="moveUserDown('${user.id}', ${index})">⬇️</button>
+        <button class="btn-sm" onclick="resetUserPassword('${user.id}', '${user.email}')" style="background:#888; color:white;" title="Reset Password">🔑</button>
         <button class="btn-danger btn-sm" onclick="removeUser('${user.id}')">🗑️</button>
       </div>` : ''}
     </div>
@@ -302,6 +304,17 @@ async function makeResident(userId) {
   try {
     await db.collection('users').doc(userId).update({ role: 'resident', activeRole: 'resident' });
     alert('✅ ' + user.name + ' is now a Resident!');
+  } catch (error) {
+    alert('Error: ' + error.message);
+  }
+}
+
+// Reset user password (PO/Manager only)
+async function resetUserPassword(userId, email) {
+  if (!confirm(`Send password reset email to ${email}?`)) return;
+  try {
+    await auth.sendPasswordResetEmail(email);
+    alert(`Password reset link sent to ${email}`);
   } catch (error) {
     alert('Error: ' + error.message);
   }

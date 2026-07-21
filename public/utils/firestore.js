@@ -6,6 +6,7 @@
 async function getAllUsers() {
   const snapshot = await db.collection('users')
     .where('approved', '==', true)
+    .where('active', '==', true)
     .get();
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }

@@ -46,6 +46,9 @@ async function getManagerDashboardHTML() {
           <button class="btn-primary" onclick="loadPage('users')" style="max-width:100%;">👥 Manage Users</button>
           <button class="btn-primary" onclick="loadPage('cleaning')" style="max-width:100%;">🧹 Cleaning Queue</button>
           <button class="btn-primary" onclick="loadPage('fv')" style="max-width:100%; grid-column:1/-1; justify-self:center;">🥬 F&V Queue</button>
+          ${window.currentUser?.role === 'po' ? `
+          <button class="btn-danger" onclick="resetAllData()" style="max-width:100%; grid-column:1/-1; justify-self:center; margin-top:16px;">Reset All Data</button>
+          ` : ''}
         </div>
       </div>
     </div>
@@ -200,5 +203,26 @@ async function showSetKaryakarDialog() {
     } else {
       alert('User not found. Please enter exact name.');
     }
+  }
+}
+
+// Reset all data (PO only)
+async function resetAllData() {
+  if (!confirm('⚠️ WARNING: This will delete ALL data (rent, expenses, attendance, assignments, notifications). Users and PG Config will be kept. This CANNOT be undone. Continue?')) return;
+  if (!confirm('Are you REALLY sure? Type "DELETE" to confirm.')) return;
+  
+  const collections = ['attendance', 'rentPayments', 'expenses', 'cleaningAssignments', 'fvAssignments', 'weeklySabha', 'notifications'];
+  
+  try {
+    for (const col of collections) {
+      const snapshot = await db.collection(col).get();
+      const batch = db.batch();
+      snapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    }
+    alert('✅ All data has been reset!');
+    location.reload();
+  } catch (error) {
+    alert('Error: ' + error.message);
   }
 }

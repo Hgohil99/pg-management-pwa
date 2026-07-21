@@ -271,3 +271,18 @@ function togglePassword(inputId, btn) {
   if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
   else { input.type = 'password'; btn.textContent = '👁️'; }
 }
+
+// Forgot password
+async function resetPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) {
+    alert('Please enter your email address first');
+    return;
+  }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    alert('Password reset link sent to your email!');
+  } catch (error) {
+    alert('Error: ' + error.message);
+  }
+}

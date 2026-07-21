@@ -33,6 +33,9 @@
           <input type="password" id="login-password" placeholder="Password" required autocomplete="current-password" style="width:100%; padding-right:40px;">
           <button type="button" onclick="togglePassword('login-password', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px;">👁️</button>
         </div>
+        <p style="margin-top:4px; font-size:12px; text-align:right;">
+          <a href="#" onclick="resetPassword()" style="color:#888;">Forgot Password?</a>
+        </p>
         <button type="submit" class="btn-primary">Sign In</button>
       </form>
       <p style="margin-top:12px; font-size:13px;">Don't have an account? <a href="#" onclick="showRegister()" style="color:#4CAF50;">Register here</a></p>
