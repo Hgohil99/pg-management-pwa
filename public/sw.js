@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pg-manager-v3';
+const CACHE_NAME = 'pg-manager-v5';
 const urlsToCache = [
   '/',
   '/index.html',
