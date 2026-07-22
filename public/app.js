@@ -17,31 +17,29 @@ async function initPGApp(userData) {
   let navItems = [];
 
   if (isAdminMode) {
-    // PO/Manager mode - only admin tasks
     navItems = [
-      { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-      { id: 'users', label: 'Users', icon: '👥' },
-      { id: 'rent', label: 'Verify Rent', icon: '💰' },
-      { id: 'expenses', label: 'Settle Expenses', icon: '🧾' },
-      { id: 'cleaning', label: 'Cleaning', icon: '🧹' },
-      { id: 'fv', label: 'F&V', icon: '🥬' },
+      { id: 'dashboard', label: 'Dashboard' },
+      { id: 'users', label: 'Users' },
+      { id: 'rent', label: 'Verify Rent' },
+      { id: 'expenses', label: 'Settle Expenses' },
+      { id: 'cleaning', label: 'Cleaning' },
+      { id: 'fv', label: 'F&V' },
     ];
     if (isKaryakar) {
-      navItems.push({ id: 'sabha', label: 'Sabha', icon: '📝' });
+      navItems.push({ id: 'sabha', label: 'Sabha' });
     }
   } else {
-    // Resident mode
     navItems = [
-      { id: 'my-activity', label: 'Activity', icon: '👤' },
-      { id: 'users', label: 'Users', icon: '👥' },
-      { id: 'attendance', label: 'Attendance', icon: '📋' },
-      { id: 'rent', label: 'Rent', icon: '💰' },
-      { id: 'expenses', label: 'Expenses', icon: '🧾' },
-      { id: 'cleaning', label: 'Cleaning', icon: '🧹' },
-      { id: 'fv', label: 'F&V', icon: '🥬' },
+      { id: 'my-activity', label: 'Activity' },
+      { id: 'users', label: 'Users' },
+      { id: 'attendance', label: 'Attendance' },
+      { id: 'rent', label: 'Rent' },
+      { id: 'expenses', label: 'Expenses' },
+      { id: 'cleaning', label: 'Cleaning' },
+      { id: 'fv', label: 'F&V' },
     ];
     if (isKaryakar) {
-      navItems.push({ id: 'sabha', label: 'Sabha', icon: '📝' });
+      navItems.push({ id: 'sabha', label: 'Sabha' });
     }
   }
 
@@ -50,15 +48,15 @@ async function initPGApp(userData) {
   const hamburgerItems = document.getElementById('hamburger-menu-items');
   if (hamburgerItems) {
     hamburgerItems.innerHTML = navItems.map(item => `
-      <button class="menu-item" onclick="loadPage('${item.id}'); toggleMenu();" style="display:block; width:100%; padding:10px; border:none; background:none; text-align:left; font-size:14px; cursor:pointer; border-radius:8px; margin:2px 0;">
-        ${item.icon} ${item.label}
+      <button class="menu-item" onclick="loadPage('${item.id}'); toggleMenu();" style="display:block; width:100%; padding:8px 10px; border:none; background:none; text-align:left; font-size:13px; cursor:pointer; border-radius:6px; margin:1px 0; color:var(--text-secondary);">
+        ${item.label}
       </button>
     `).join('');
     
     hamburgerItems.innerHTML += `
-      <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-      <button class="menu-item" onclick="logout()" style="display:block; width:100%; padding:10px; border:none; background:none; text-align:left; font-size:14px; cursor:pointer; border-radius:8px; color:#f44336;">
-        🚪 Logout
+      <hr style="border:0; border-top:1px solid var(--border); margin:6px 0;">
+      <button class="menu-item" onclick="logout()" style="display:block; width:100%; padding:8px 10px; border:none; background:none; text-align:left; font-size:13px; cursor:pointer; border-radius:6px; color:var(--danger);">
+        Logout
       </button>
     `;
   }
@@ -76,7 +74,7 @@ async function loadPage(pageName) {
   mainContent.innerHTML = '<div class="spinner"></div>';
 
   const titles = {
-    'my-activity': 'My Activity',
+    'my-activity': 'Activity',
     'users': 'Users',
     'dashboard': 'Dashboard',
     'attendance': 'Attendance',
@@ -131,7 +129,7 @@ async function loadPage(pageName) {
     }
   } catch (error) {
     console.error('Error loading page:', error);
-    mainContent.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+    mainContent.innerHTML = `<p style="color:var(--danger);">Error: ${error.message}</p>`;
   }
 }
 
@@ -157,9 +155,9 @@ function toggleProfile() {
   const user = window.currentUser;
   
   if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-    document.getElementById('profile-name').textContent = '👤 ' + (user?.name || 'User');
-    document.getElementById('profile-email').textContent = '📧 ' + (user?.email || '');
-    document.getElementById('profile-role').textContent = '🔑 Active: ' + (user?.activeRole || user?.role || '');
+    document.getElementById('profile-name').textContent = (user?.name || 'User');
+    document.getElementById('profile-email').textContent = (user?.email || '');
+    document.getElementById('profile-role').textContent = 'Role: ' + (user?.activeRole || user?.role || '');
     dropdown.style.display = 'block';
     updateThemeToggleUI();
     updateRoleSwitchUI();
@@ -198,13 +196,13 @@ function updateRoleSwitchUI() {
   const isAdminMode = user?.activeRole === user?.role;
   
   if (isAdminMode) {
-    toggle.style.background = '#4CAF50';
-    dot.style.left = '22px';
-    label.textContent = '👑 Switch to Resident';
+    toggle.style.background = 'var(--primary)';
+    dot.style.left = '20px';
+    label.textContent = 'Switch to Resident';
   } else {
     toggle.style.background = '#ccc';
     dot.style.left = '2px';
-    label.textContent = '👤 Switch to ' + (user?.role === 'po' ? 'PO' : 'Manager');
+    label.textContent = 'Switch to ' + (user?.role === 'po' ? 'PO' : 'Manager');
   }
 }
 
@@ -217,10 +215,7 @@ async function toggleRoleMode() {
   const newActiveRole = isAdminMode ? 'resident' : user?.role;
   
   try {
-    await db.collection('users').doc(user.uid).update({
-      activeRole: newActiveRole
-    });
-    
+    await db.collection('users').doc(user.uid).update({ activeRole: newActiveRole });
     window.currentUser.activeRole = newActiveRole;
     location.reload();
   } catch (error) {
@@ -239,7 +234,6 @@ async function toggleRoleMode() {
 function toggleTheme() {
   const body = document.body;
   body.classList.toggle('dark-mode');
-  
   if (body.classList.contains('dark-mode')) {
     localStorage.setItem('pg-theme', 'dark');
   } else {
@@ -255,17 +249,16 @@ function updateThemeToggleUI() {
   if (!toggle || !dot) return;
   
   if (document.body.classList.contains('dark-mode')) {
-    toggle.style.background = '#4CAF50';
-    dot.style.left = '22px';
-    if (label) label.textContent = '☀️ Light Mode';
+    toggle.style.background = 'var(--primary)';
+    dot.style.left = '20px';
+    if (label) label.textContent = 'Light Mode';
   } else {
     toggle.style.background = '#ccc';
     dot.style.left = '2px';
-    if (label) label.textContent = '🌙 Dark Mode';
+    if (label) label.textContent = 'Dark Mode';
   }
 }
 
-// Force logout all devices for current user
 async function forceLogoutAll() {
   if (!confirm('This will sign you out on all devices. Continue?')) return;
   try {

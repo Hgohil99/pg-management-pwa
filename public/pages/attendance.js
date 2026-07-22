@@ -1,40 +1,36 @@
 // ============================================
-// 📋 ATTENDANCE MODULE
+// ATTENDANCE MODULE
 // ============================================
 
 async function getAttendanceHTML() {
   return `
     <div class="page attendance-page">
-      <h2>📋 Attendance</h2>
+      <h2>Attendance</h2>
       
-      <!-- My Current Status -->
       <div class="section">
         <h3>My Status</h3>
         <p id="my-status">Loading...</p>
       </div>
 
-      <!-- Check In -->
       <div class="section" id="checkin-section">
-        <h3>📍 Check In (Arriving at PG)</h3>
+        <h3>Check In (Arriving at PG)</h3>
         <label>Date:</label>
         <input type="date" id="checkin-date" value="${today()}" max="${getMaxCheckInDate()}" style="width:100%;">
-        <button class="btn-primary" id="checkin-btn" onclick="checkIn()">Check In ✅</button>
-        <button class="btn-warning" id="modify-checkin-btn" onclick="modifyCheckIn()" style="display:none;">Modify Check In ✏️</button>
+        <button class="btn-primary" id="checkin-btn" onclick="checkIn()">Check In</button>
+        <button class="btn-warning" id="modify-checkin-btn" onclick="modifyCheckIn()" style="display:none;">Modify Check In</button>
       </div>
 
-      <!-- Check Out -->
       <div class="section" id="checkout-section" style="display:none;">
-        <h3>🚶 Check Out (Leaving PG)</h3>
+        <h3>Check Out (Leaving PG)</h3>
         <label>Departure Date:</label>
         <input type="date" id="checkout-date" value="${today()}" placeholder="Select departure date" style="width:100%;">
         <label>Return Date (optional):</label>
         <input type="date" id="return-date" placeholder="Select return date (optional)" style="width:100%;">
-        <button class="btn-warning" onclick="checkOut()">Check Out 🚶</button>
+        <button class="btn-warning" onclick="checkOut()">Check Out</button>
       </div>
 
-      <!-- My History -->
       <div class="section">
-        <h3>📅 My History</h3>
+        <h3>History</h3>
         <div id="attendance-history">Loading...</div>
       </div>
     </div>
@@ -57,11 +53,11 @@ async function loadAttendancePageData() {
   if (userDoc.exists) {
     const data = userDoc.data();
     if (data.present) {
-      myStatusEl.innerHTML = '<span style="color:green;">🟢 You are currently IN PG</span>';
+      myStatusEl.innerHTML = '<span style="color:var(--success);"><span class="status-dot present"></span> You are currently IN PG</span>';
       document.getElementById('checkin-section').style.display = 'none';
       document.getElementById('checkout-section').style.display = 'block';
     } else {
-      myStatusEl.innerHTML = '<span style="color:red;">🔴 You are OUT of PG</span>';
+      myStatusEl.innerHTML = '<span style="color:var(--danger);"><span class="status-dot absent"></span> You are OUT of PG</span>';
       document.getElementById('checkin-section').style.display = 'block';
       document.getElementById('checkout-section').style.display = 'none';
       
@@ -79,7 +75,7 @@ async function loadAttendancePageData() {
       }
     }
   } else {
-    myStatusEl.innerHTML = '<span style="color:gray;">⚪ No record yet</span>';
+    myStatusEl.innerHTML = '<span style="color:var(--text-secondary);">No record yet</span>';
   }
 
   const historySnapshot = await db.collection('attendance')
@@ -94,9 +90,9 @@ async function loadAttendancePageData() {
       const d = doc.data();
       return `
         <div class="list-item">
-          <span>📥 In: ${formatDisplayDate(d.checkInDate)}</span>
-          <span>📤 Out: ${d.checkOutDate ? formatDisplayDate(d.checkOutDate) : 'Still in PG'}</span>
-          ${d.nextCheckInDate ? `<span>🔄 Return: ${formatDisplayDate(d.nextCheckInDate)}</span>` : ''}
+          <span>In: ${formatDisplayDate(d.checkInDate)}</span>
+          <span>Out: ${d.checkOutDate ? formatDisplayDate(d.checkOutDate) : 'Still in PG'}</span>
+          ${d.nextCheckInDate ? `<span>Return: ${formatDisplayDate(d.nextCheckInDate)}</span>` : ''}
         </div>
       `;
     }).join('');
@@ -133,7 +129,7 @@ async function checkIn() {
       await db.collection('users').doc(userId).update({ present: true });
     }
 
-    alert('✅ Checked in successfully!');
+    alert('Checked in successfully!');
     loadAttendancePageData();
   } catch (error) {
     alert('Error: ' + error.message);
@@ -156,7 +152,7 @@ async function modifyCheckIn() {
 
     if (!todayCheckIn.empty) {
       await todayCheckIn.docs[0].ref.update({ checkInDate: newDate });
-      alert('✅ Check-in modified!');
+      alert('Check-in modified!');
       loadAttendancePageData();
     }
   } catch (error) {
@@ -187,7 +183,6 @@ async function checkOut() {
 
     await db.collection('users').doc(userId).update({ present: false });
 
-    // Reassign future cleaning
     const tomorrowDate = tomorrow();
     const cleaningDoc = await db.collection('cleaningAssignments').doc(tomorrowDate).get();
     if (cleaningDoc.exists && cleaningDoc.data().finalAssignee === userId && !cleaningDoc.data().confirmedAt) {
@@ -200,7 +195,6 @@ async function checkOut() {
       });
     }
 
-    // Notify for F&V
     const todayDateObj = new Date();
     const dayOfWeek = todayDateObj.getDay();
     let thursday = new Date(todayDateObj);
@@ -219,7 +213,6 @@ async function checkOut() {
       }
     }
 
-    // Notify for Sabha
     let wednesday = new Date(todayDateObj);
     if (dayOfWeek <= 3) { wednesday.setDate(todayDateObj.getDate() + (3 - dayOfWeek)); }
     else { wednesday.setDate(todayDateObj.getDate() + (10 - dayOfWeek)); }
@@ -236,7 +229,7 @@ async function checkOut() {
       }
     }
 
-    alert('✅ Checked out successfully!');
+    alert('Checked out successfully!');
     loadAttendancePageData();
   } catch (error) {
     alert('Error: ' + error.message);

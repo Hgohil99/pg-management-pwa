@@ -1,5 +1,5 @@
 // ============================================
-// 🥬 FRUITS & VEGETABLES MODULE
+// FRUITS & VEGETABLES MODULE
 // ============================================
 
 async function getFVHTML() {
@@ -7,23 +7,23 @@ async function getFVHTML() {
   
   return `
     <div class="page fv-page">
-      <h2>🥬 Fruits & Vegetables</h2>
+      <h2>Fruits & Vegetables</h2>
       
       <div class="section">
-        <h3>📌 This Week's F&V Duty</h3>
+        <h3>This Week's F&V Duty</h3>
         <div id="this-week-fv">Loading...</div>
       </div>
 
       ${isManager ? `
       <div id="admin-fv-section">
         <div class="section">
-          <h3>👥 F&V Rotation</h3>
-          <p style="font-size:12px; color:#666;">Assignments follow the Users list order (only present people)</p>
+          <h3>F&V Rotation</h3>
+          <p style="font-size:12px; color:var(--text-secondary);">Assignments follow the Users list order (only present people)</p>
           <div id="fv-queue">Loading...</div>
         </div>
         <div class="section">
-          <button class="btn-primary" onclick="assignFVManually()">🔄 Assign F&V Manually</button>
-          <button class="btn-primary" onclick="autoAssignFV()" style="margin-top:8px;">🤖 Auto-Assign from Present List</button>
+          <button class="btn-primary" onclick="assignFVManually()">Assign F&V Manually</button>
+          <button class="btn-primary" onclick="autoAssignFV()" style="margin-top:8px;">Auto-Assign from Present List</button>
         </div>
       </div>` : ''}
     </div>
@@ -55,18 +55,16 @@ async function loadFVPageData() {
         const isMe = (a.userId || '').toString().toLowerCase() === userId.toLowerCase();
         return `
           <div class="list-item">
-            <span>👤 ${a.userName || a.userId}</span>
-            <span>Status: ${a.status === 'confirmed' ? '✅' : a.status === 'declined' ? '❌' : '⏳'}</span>
+            <span>${a.userName || a.userId}</span>
+            <span>Status: ${a.status === 'confirmed' ? 'Confirmed' : a.status === 'declined' ? 'Declined' : 'Pending'}</span>
             ${isMe && a.status === 'pending' ? 
-              `<button class="btn-success btn-sm" onclick="confirmFV('${thursdayStr}', '${a.userId}')">Confirm ✅</button>
-               <button class="btn-danger btn-sm" onclick="declineFV('${thursdayStr}', '${a.userId}')">Decline ❌</button>` : ''}
+              `<button class="btn-success btn-sm" onclick="confirmFV('${thursdayStr}', '${a.userId}')">Confirm</button>
+               <button class="btn-danger btn-sm" onclick="declineFV('${thursdayStr}', '${a.userId}')">Decline</button>` : ''}
           </div>
         `;
       }).join('')}
     `;
-  } else {
-    el.innerHTML = '<p>No F&V assignment yet for this week</p>';
-  }
+  } else { el.innerHTML = '<p>No F&V assignment yet for this week</p>'; }
 }
 
 async function confirmFV(dateStr, userId) {
@@ -80,7 +78,7 @@ async function confirmFV(dateStr, userId) {
       return a;
     });
     await docRef.update({ assignees });
-    alert('✅ Confirmed!');
+    alert('Confirmed!');
     loadFVPageData();
   } catch (error) { alert('Error: ' + error.message); }
 }
@@ -99,7 +97,7 @@ async function declineFV(dateStr, userId) {
       await docRef.update({ assignees });
       const managers = await db.collection('users').where('role', 'in', ['manager', 'po']).get();
       managers.forEach(doc => {
-        sendNotification(doc.id, 'F&V Declined', `${window.currentUser.name} declined F&V duty. Needs replacement.`, '/');
+        sendNotification(doc.id, 'F&V Declined', `${window.currentUser.name} declined F&V duty.`, '/');
       });
       alert('Declined. Managers will reassign.');
       loadFVPageData();
@@ -111,14 +109,16 @@ async function loadFVQueue() {
   const users = await getAllUsers();
   const presentUsers = users.filter(u => u.present).sort((a, b) => (a.order || 0) - (b.order || 0));
   const el = document.getElementById('fv-queue');
+  
   if (presentUsers.length > 0) {
     el.innerHTML = '<p style="font-size:13px; margin-bottom:8px;">Present people (in order):</p>';
     el.innerHTML += presentUsers.map((user, index) => `
-      <div class="list-item"><span>${index + 1}. ${user.name}</span><span>🟢</span></div>
+      <div class="list-item">
+        <span>${index + 1}. ${user.name}</span>
+        <span class="status-dot present"></span>
+      </div>
     `).join('');
-  } else {
-    el.innerHTML = '<p>No one is present</p>';
-  }
+  } else { el.innerHTML = '<p>No one is present</p>'; }
 }
 
 async function autoAssignFV() {
@@ -161,10 +161,10 @@ async function autoAssignFV() {
   for (const user of selectedUsers) {
     const partner = selectedUsers.find(u => u.id !== user.id);
     const msg = partner ? `Partner: ${partner.name}` : 'You are the only one assigned';
-    await sendNotification(user.id, 'F&V Duty', `🥬 You are assigned for F&V purchase this Thursday (${formatDisplayDate(thursdayStr)}). ${msg} Please plan accordingly.`, '/');
+    await sendNotification(user.id, 'F&V Duty', `You are assigned for F&V purchase this Thursday (${formatDisplayDate(thursdayStr)}). ${msg}`, '/');
   }
 
-  alert(`✅ Auto-assigned to ${selectedUsers.map(u => u.name).join(' & ')}!`);
+  alert('Auto-assigned to ' + selectedUsers.map(u => u.name).join(' & ') + '!');
   loadFVPageData();
 }
 
@@ -194,8 +194,8 @@ async function assignFVManually() {
         assignees: [{ userId: user.id, userName: user.name, status: 'pending' }],
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      await sendNotification(user.id, 'F&V Duty', `🥬 You are assigned for F&V purchase this Thursday (${formatDisplayDate(thursdayStr)}). Please plan accordingly.`, '/');
-      alert('✅ Assigned to ' + user.name + '!');
+      await sendNotification(user.id, 'F&V Duty', `You are assigned for F&V on Thursday (${formatDisplayDate(thursdayStr)}).`, '/');
+      alert('Assigned to ' + user.name + '!');
     }
   } else {
     const sel1 = prompt('Select FIRST person for F&V (enter number):\n\n' + userList);
@@ -215,9 +215,9 @@ async function assignFVManually() {
         ],
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      await sendNotification(u1.id, 'F&V Duty', `🥬 You are assigned for F&V purchase this Thursday (${formatDisplayDate(thursdayStr)}). Partner: ${u2.name}. Please plan accordingly.`, '/');
-      await sendNotification(u2.id, 'F&V Duty', `🥬 You are assigned for F&V purchase this Thursday (${formatDisplayDate(thursdayStr)}). Partner: ${u1.name}. Please plan accordingly.`, '/');
-      alert('✅ Assigned to ' + u1.name + ' & ' + u2.name + '!');
+      await sendNotification(u1.id, 'F&V Duty', `F&V on Thursday (${formatDisplayDate(thursdayStr)}). Partner: ${u2.name}`, '/');
+      await sendNotification(u2.id, 'F&V Duty', `F&V on Thursday (${formatDisplayDate(thursdayStr)}). Partner: ${u1.name}`, '/');
+      alert('Assigned to ' + u1.name + ' & ' + u2.name + '!');
     } else { alert('Invalid selection'); }
   }
   loadFVPageData();

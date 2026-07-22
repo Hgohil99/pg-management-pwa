@@ -1,39 +1,38 @@
 // ============================================
-// 📝 WEEKLY SABHA MODULE
+// WEEKLY SABHA MODULE
 // ============================================
 
 async function getSabhaHTML() {
   const userId = window.currentUser.uid;
   const isManager = window.currentUser.role === 'manager' || window.currentUser.role === 'po';
-  
   const config = await getPGConfig();
   const isKaryakar = config?.currentKaryakarId === userId;
   
   return `
     <div class="page sabha-page">
-      <h2>📝 Weekly Sabha</h2>
+      <h2>Weekly Sabha</h2>
       
       <div class="section">
-        <h3>👤 Current Karyakar</h3>
+        <h3>Current Karyakar</h3>
         <p id="karyakar-info">Loading...</p>
         ${isManager ? `<button class="btn-primary" onclick="showSetKaryakarDialog()">Change Karyakar</button>` : ''}
       </div>
 
       <div class="section">
-        <h3>📋 This Week's Sabha Tasks</h3>
+        <h3>This Week's Tasks</h3>
         <div id="sabha-tasks">Loading...</div>
       </div>
 
       <div id="karyakar-section" style="display:none;">
         <div class="section">
-          <h3>✍️ Assign Tasks</h3>
+          <h3>Assign Tasks</h3>
           <div id="task-assignment-form">Loading...</div>
-          <button class="btn-primary" onclick="finishSabha()">✅ Finish Assignment</button>
+          <button class="btn-primary" onclick="finishSabha()">Finish Assignment</button>
         </div>
       </div>
 
       <div class="section">
-        <h3>👤 My Assigned Tasks</h3>
+        <h3>My Tasks</h3>
         <div id="my-sabha-tasks">Loading...</div>
       </div>
     </div>
@@ -70,15 +69,15 @@ async function loadSabhaPageData() {
     const data = sabhaDoc.data();
     
     if (data.isFinished) {
-      tasksEl.innerHTML = '<p>✅ Tasks have been assigned!</p>';
+      tasksEl.innerHTML = '<p>Tasks have been assigned!</p>';
       tasksEl.innerHTML += (data.tasks || []).map(t => `
         <div class="list-item">
-          <span>👤 ${t.assigneeName || t.assigneeId}: ${t.taskDescription}</span>
-          <span>${t.status === 'accepted' ? '✅' : t.status === 'declined' ? '❌' : '⏳'}</span>
+          <span>${t.assigneeName || t.assigneeId}: ${t.taskDescription}</span>
+          <span>${t.status === 'accepted' ? 'Accepted' : t.status === 'declined' ? 'Declined' : 'Pending'}</span>
         </div>
       `).join('');
     } else {
-      tasksEl.innerHTML = '<p>⏳ Tasks not yet assigned. Waiting for Karyakar.</p>';
+      tasksEl.innerHTML = '<p>Tasks not yet assigned.</p>';
     }
 
     const myTasks = (data.tasks || []).filter(t => t.assigneeId === userId);
@@ -86,12 +85,12 @@ async function loadSabhaPageData() {
     if (myTasks.length > 0) {
       myTasksEl.innerHTML = myTasks.map(t => `
         <div class="list-item">
-          <span>📌 ${t.taskDescription}</span>
-          <span>Status: ${t.status === 'accepted' ? '✅ Accepted' : t.status === 'declined' ? '❌ Declined' : '⏳ Pending'}</span>
+          <span>${t.taskDescription}</span>
+          <span>${t.status === 'accepted' ? 'Accepted' : t.status === 'declined' ? 'Declined' : 'Pending'}</span>
           ${t.status === 'pending' ? `
             <div>
-              <button class="btn-success btn-sm" onclick="acceptSabhaTask('${wednesdayStr}', '${t.assigneeId}', '${t.taskDescription.replace(/'/g, "\\'")}')">Accept ✅</button>
-              <button class="btn-danger btn-sm" onclick="declineSabhaTask('${wednesdayStr}', '${t.assigneeId}', '${t.taskDescription.replace(/'/g, "\\'")}')">Decline ❌</button>
+              <button class="btn-success btn-sm" onclick="acceptSabhaTask('${wednesdayStr}', '${t.assigneeId}', '${t.taskDescription.replace(/'/g, "\\'")}')">Accept</button>
+              <button class="btn-danger btn-sm" onclick="declineSabhaTask('${wednesdayStr}', '${t.assigneeId}', '${t.taskDescription.replace(/'/g, "\\'")}')">Decline</button>
             </div>
           ` : ''}
         </div>
@@ -129,7 +128,7 @@ async function acceptSabhaTask(dateStr, userId, taskDesc) {
     if (config?.currentKaryakarId) {
       await sendNotification(config.currentKaryakarId, 'Task Accepted', `${window.currentUser.name} accepted task: ${taskDesc}`, '/');
     }
-    alert('✅ Task accepted!');
+    alert('Task accepted!');
     loadSabhaPageData();
   } catch (error) { alert('Error: ' + error.message); }
 }
@@ -209,7 +208,7 @@ async function finishSabha() {
       await sendNotification(task.assigneeId, 'Sabha Task', `You have been assigned: ${task.taskDescription}`, '/');
     }
 
-    alert('✅ Sabha tasks assigned successfully!');
+    alert('Sabha tasks assigned successfully!');
     loadSabhaPageData();
   } catch (error) { alert('Error: ' + error.message); }
 }
