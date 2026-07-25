@@ -110,7 +110,7 @@ async function uploadRent() {
 
   cloudinary.openUploadWidget({
     cloudName: signData.cloudName, uploadSignature: signData.signature,
-    uploadSignatureTimestamp: signData.timestamp, apiKey: 'YOUR_CLOUDINARY_API_KEY',
+    uploadSignatureTimestamp: signData.timestamp, apiKey: '776889833388688',
     folder: signData.folder, sources: ['local', 'camera'], multiple: false,
     maxFileSize: 5000000, clientAllowedFormats: ['jpg', 'jpeg', 'png', 'pdf'], theme: 'minimal'
   }, async (error, result) => {
