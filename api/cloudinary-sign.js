@@ -11,15 +11,19 @@ module.exports = (req, res) => {
   const timestamp = Math.round(new Date().getTime() / 1000);
   const folder = 'rent-screenshots';
   
+  // Include source=uw in the signature
+  const paramsToSign = `folder=${folder}&source=uw&timestamp=${timestamp}`;
+  
   const signature = crypto
     .createHash('sha256')
-    .update(`folder=${folder}&timestamp=${timestamp}${process.env.CLOUDINARY_API_SECRET}`)
+    .update(paramsToSign + process.env.CLOUDINARY_API_SECRET)
     .digest('hex');
   
   res.json({
     signature,
     timestamp,
     folder,
-    cloudName: process.env.CLOUDINARY_CLOUD_NAME
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: '776889833388688'
   });
 };

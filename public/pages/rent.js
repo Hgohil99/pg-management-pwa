@@ -108,11 +108,17 @@ async function uploadRent() {
   const response = await fetch('https://pg-management-pwa.vercel.app/api/cloudinary-sign');
   const signData = await response.json();
 
-  cloudinary.openUploadWidget({
-    cloudName: signData.cloudName, uploadSignature: signData.signature,
-    uploadSignatureTimestamp: signData.timestamp, apiKey: '776889833388688',
-    folder: signData.folder, sources: ['local', 'camera'], multiple: false,
-    maxFileSize: 5000000, clientAllowedFormats: ['jpg', 'jpeg', 'png', 'pdf'], theme: 'minimal'
+    cloudinary.openUploadWidget({
+    cloudName: signData.cloudName,
+    apiKey: signData.apiKey,
+    uploadSignature: signData.signature,
+    uploadSignatureTimestamp: signData.timestamp,
+    folder: signData.folder,
+    sources: ['local', 'camera'],
+    multiple: false,
+    maxFileSize: 5000000,
+    clientAllowedFormats: ['jpg', 'jpeg', 'png', 'pdf'],
+    theme: 'minimal'
   }, async (error, result) => {
     if (error) { console.error('Upload error:', error); alert('Upload failed.'); return; }
     if (result.event === 'success') {
